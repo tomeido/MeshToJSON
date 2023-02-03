@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+	<AddIn Type="Application">
+		<Name>MeshToJSON</Name>
+		<Assembly>C:\RevitAddin\MeshToJSON\MeshToJSON\bin\Debug\MeshToJSON.dll</Assembly>
+		<FullClassName>MeshToJSON.App</FullClassName>
+		<ClientId>152C2793-F836-4735-BAC1-4E0B2EC4E342</ClientId>
+		<VendorId>1</VendorId>
+		<VendorDescription>1</VendorDescription>
+	</AddIn>
+</RevitAddIns>
