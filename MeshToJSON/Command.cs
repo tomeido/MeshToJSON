@@ -14,16 +14,22 @@ using System.IO;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.DB.Mechanical;
 using System.Diagnostics;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 
 namespace MeshToJSON
 {
+
+
+
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalCommand
     {
+        XYZ vertex0 = new XYZ();
         XYZ vertex1 = new XYZ();
         XYZ vertex2 = new XYZ();
-        XYZ vertex3 = new XYZ();
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             //Get application and document objects
@@ -36,6 +42,7 @@ namespace MeshToJSON
                 //Pick a group
                 Selection sel = uiapp.ActiveUIDocument.Selection;
 
+                string JSONpath = @"C:\ProgramData\Autodesk\Revit\Addins\2021\SmartRouting\smrvertex.json";
 
                 /*
                 //single vertex
@@ -49,17 +56,50 @@ namespace MeshToJSON
 
 
 
-                //multi vertex
-                string str = "";
+                ////multi vertex
+                //string str = "";
+                //IList<Reference> facesRef = sel.PickObjects(ObjectType.Face, "Pick Faces");
+                //foreach (Reference r in facesRef)
+                //{
+                //    GeometryObject a = doc.GetElement(r).GetGeometryObjectFromReference(r);
+                //    Face f = a as Face;
+                //    GetTrianglesFromFace(f);
+                //    str += vertex0.ToString() + vertex1.ToString() + vertex2.ToString();
+                //}
+                //TaskDialog.Show("vertex", str);
+
+                //multi vertex to JSON
                 IList<Reference> facesRef = sel.PickObjects(ObjectType.Face, "Pick Faces");
-                foreach (Reference r in facesRef)
+                var jCoord = new JArray();
+                for (int i = 0; i < facesRef.Count; i++)
                 {
-                    GeometryObject a = doc.GetElement(r).GetGeometryObjectFromReference(r);
+                    GeometryObject a = doc.GetElement(facesRef[i]).GetGeometryObjectFromReference(facesRef[i]);
                     Face f = a as Face;
                     GetTrianglesFromFace(f);
-                    str += vertex1.ToString() + vertex2.ToString() + vertex3.ToString();
+                    var v0 = new JObject();
+                    var v1 = new JObject();
+                    var v2 = new JObject();
+                    v0.Add("X", vertex0.X.ToString());
+                    v0.Add("Y", vertex0.Y.ToString());
+                    v0.Add("Z", vertex0.Z.ToString());
+                    v1.Add("X", vertex1.X.ToString());
+                    v1.Add("Y", vertex1.Y.ToString());
+                    v1.Add("Z", vertex1.Z.ToString());
+                    v2.Add("X", vertex2.X.ToString());
+                    v2.Add("Y", vertex2.Y.ToString());
+                    v2.Add("Z", vertex2.Z.ToString());
+                    var strjson = JObject.FromObject(new { index = i });
+                    strjson.Add("v0", v0);
+                    strjson.Add("v1", v1);
+                    strjson.Add("v2", v2);
+
+                    jCoord.Add(strjson);
                 }
-                TaskDialog.Show("vertex", str);
+                JObject o = new JObject();
+                o["faces"] = jCoord;
+
+                CreateJSONfile(JSONpath, o.ToString());
+
 
 
 
@@ -145,7 +185,9 @@ namespace MeshToJSON
                 json += "\t" + "\"data\": [\n";
 
 
-
+                ////newtonsoft.json 테스트
+                //var h = PointDataImport(@"C:\temp\PointData.json");
+                //TaskDialog.Show("filepath", h[0].ToString());
 
                 return Result.Succeeded;
             }
@@ -160,6 +202,13 @@ namespace MeshToJSON
                 message = ex.Message;
                 return Result.Failed;
             }
+
+
+        }
+
+        static void CreateJSONfile(string dataPath, string strjson)
+        {
+            File.WriteAllText(dataPath, strjson);
         }
 
 
@@ -170,9 +219,9 @@ namespace MeshToJSON
             for (int i = 0; i < mesh.NumTriangles; i++)
             {
                 MeshTriangle triangle = mesh.get_Triangle(i);
-                vertex1 = triangle.get_Vertex(0);
-                vertex2 = triangle.get_Vertex(1);
-                vertex3 = triangle.get_Vertex(2);
+                vertex0 = triangle.get_Vertex(0);
+                vertex1 = triangle.get_Vertex(1);
+                vertex2 = triangle.get_Vertex(2);
             }
         }
 
@@ -207,5 +256,31 @@ namespace MeshToJSON
                fileName => doc.PathName.Equals(fileName)));
         }
 
+
+        ////newtonsoft.json 테스트
+        //public List<int> PointDataImport(string filePath)
+        //{
+        //    string jsonPath = filePath;
+        //    string str = string.Empty;
+        //    string users = string.Empty;
+        //    List<int> Data = new List<int>();
+
+        //    using (StreamReader file = File.OpenText(jsonPath))
+        //    using (JsonTextReader reader = new JsonTextReader(file))
+        //    {
+        //        JObject json = (JObject)JToken.ReadFrom(reader);
+        //        JToken token = json["data"]?[0];
+
+        //        while (token != null)
+        //        {
+        //            var data = int.Parse(token["id"]?.ToString() ?? string.Empty);
+
+        //            Data.Add(data);
+        //            token = token.Next;
+        //        }
+        //    }
+        //    return Data;
+        //}
     }
+
 }
