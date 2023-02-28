@@ -21,8 +21,6 @@ using Newtonsoft.Json.Linq;
 namespace MeshToJSON
 {
 
-
-
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalCommand
@@ -68,32 +66,55 @@ namespace MeshToJSON
                 //}
                 //TaskDialog.Show("vertex", str);
 
+
+
                 //multi vertex to JSON
                 IList<Reference> facesRef = sel.PickObjects(ObjectType.Face, "Pick Faces");
                 var jCoord = new JArray();
+
+                //vertex length test
+                //Face f2 = doc.GetElement(facesRef[0]).GetGeometryObjectFromReference(facesRef[0]) as Face;
+                //f2.Triangulate().get_Triangle(0).get_Vertex(3);
+
                 for (int i = 0; i < facesRef.Count; i++)
                 {
                     GeometryObject a = doc.GetElement(facesRef[i]).GetGeometryObjectFromReference(facesRef[i]);
                     Face f = a as Face;
-                    GetTrianglesFromFace(f);
-                    var v0 = new JObject();
-                    var v1 = new JObject();
-                    var v2 = new JObject();
-                    v0.Add("X", vertex0.X.ToString());
-                    v0.Add("Y", vertex0.Y.ToString());
-                    v0.Add("Z", vertex0.Z.ToString());
-                    v1.Add("X", vertex1.X.ToString());
-                    v1.Add("Y", vertex1.Y.ToString());
-                    v1.Add("Z", vertex1.Z.ToString());
-                    v2.Add("X", vertex2.X.ToString());
-                    v2.Add("Y", vertex2.Y.ToString());
-                    v2.Add("Z", vertex2.Z.ToString());
-                    var strjson = JObject.FromObject(new { index = i });
-                    strjson.Add("v0", v0);
-                    strjson.Add("v1", v1);
-                    strjson.Add("v2", v2);
 
-                    jCoord.Add(strjson);
+                    //GetTrianglesFromFace(f);
+                    //Get mesh
+                    Mesh mesh = f.Triangulate();
+
+                    for (int j = 0; j < mesh.NumTriangles; j++)
+                    {
+                        MeshTriangle triangle = mesh.get_Triangle(j);
+
+                        vertex0 = triangle.get_Vertex(0);
+                        vertex1 = triangle.get_Vertex(1);
+                        vertex2 = triangle.get_Vertex(2);
+
+                        var v0 = new JObject();
+                        var v1 = new JObject();
+                        var v2 = new JObject();
+
+                        v0.Add("X", vertex0.X.ToString());
+                        v0.Add("Y", vertex0.Y.ToString());
+                        v0.Add("Z", vertex0.Z.ToString());
+                        v1.Add("X", vertex1.X.ToString());
+                        v1.Add("Y", vertex1.Y.ToString());
+                        v1.Add("Z", vertex1.Z.ToString());
+                        v2.Add("X", vertex2.X.ToString());
+                        v2.Add("Y", vertex2.Y.ToString());
+                        v2.Add("Z", vertex2.Z.ToString());
+
+                        var strjson = JObject.FromObject(new { index = i });
+
+                        strjson.Add("v0", v0);
+                        strjson.Add("v1", v1);
+                        strjson.Add("v2", v2);
+
+                        jCoord.Add(strjson);
+                    }
                 }
                 JObject o = new JObject();
                 o["faces"] = jCoord;
@@ -101,7 +122,7 @@ namespace MeshToJSON
                 CreateJSONfile(JSONpath, o.ToString());
 
 
-
+                //TaskDialog.Show("facesRef.Count", facesRef.Count().ToString());
 
                 /*
                 Reference faceRef = sel.PickObject(ObjectType.Face, "Please pick a planar face to set the work plane. ESC for cancel.");
